@@ -1,5 +1,12 @@
 {
     "cSpell.words": [
-        "Tkinter"
+        "RGBA",
+        "Tkinter",
+        "imgtk",
+        "padx",
+        "pady"
+    ],
+    "python.analysis.extraPaths": [
+        "cameraApp"
     ]
 }
