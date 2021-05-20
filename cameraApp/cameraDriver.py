@@ -1,7 +1,6 @@
 '''
 File: cameraDriver.py
 Author: Chuncheng
-Date: 2021-05-18
 Version: 0.0
 Purpose: Drive your Camera to Capture the Images.
 '''
@@ -10,6 +9,11 @@ Purpose: Drive your Camera to Capture the Images.
 import cv2
 import time
 import threading
+import traceback
+
+import numpy as np
+
+from . import logger
 
 frame_rate = 20  # Hz
 
@@ -18,31 +22,63 @@ class CameraDriver(object):
     ''' Operation of the Camera '''
 
     def __init__(self):
-        ''' Initialize the Camera Driver
+        ''' Initialize the Camera Driver.
+        '''
+        self.camera = None
+        # self.connect()
+        logger.info('Initialized Camera Driver.')
+
+    def _valid_camera(self):
+        ''' Built-in function of validate the camera object.
+
+        Returns:
+        - The boolean value if the camera is valid.
+        '''
+        if self.camera is None:
+            return False
+        return True
+
+    def connect(self):
+        ''' Connect to the Camera
 
         Generates:
         - @self.camera: The camera object, the value of None refers to the camera is invalid;
         - @self.img: The latest image.
         '''
-        camera = cv2.VideoCapture(0)
-        success, img = camera.read()
-        if success:
-            print(
-                f'I: Success Init the Camera, img size is "{img.shape}"')
-            self.camera = camera
-            self.img = img
-        else:
-            print('E: Failed Init the Camera.')
-            self.camera = None
+        if not self._valid_camera():
+            try:
+                camera = cv2.VideoCapture(0)
+                success, img = camera.read()
+                if success:
+                    self.camera = camera
+                    self.img = img
+                    logger.info(
+                        f'Connected the Camera, img size is "{img.shape}"')
+                else:
+                    self.release()
+                    logger.error('Failed to Read Image from the Camera.')
+            except:
+                err = traceback.format_exc()
+                self.release()
+                logger.error(
+                    f'Failed to Connect to the Camera, error is "{err}"')
 
     def release(self):
         ''' Release the Camera '''
-        if self.camera is None:
-            print('E: No Camera is Specified.')
+        if not self._valid_camera():
+            logger.warning('Invalid Camera.')
             return
 
-        self.camera.release()
-        print('I: Camera is Released.')
+        # The camera may be incorrect on releasing
+        try:
+            self.capturing('stop')
+            self.camera.release()
+        except:
+            err = traceback.format_exc()
+            logger.error(f'Incorrect releasing the camera, error is "{err}"')
+
+        self.camera = None
+        logger.info('Released Camera.')
 
     def capturing(self, cmd='start'):
         ''' Capturing by the Camera
@@ -71,39 +107,35 @@ class CameraDriver(object):
         Returns:
         - @img: The latest image, the value will be None if something is wrong.
         '''
-        if mod == 'single':
-            if self.camera is None:
-                print('E: No Camera is Specified.')
+        if not self._valid_camera():
+            logger.warning('Invalid Camera.')
+            return
 
+        if mod == 'single':
             success, img = self.camera.read()
             if not success:
-                print('E: Invalid Camera is Called.')
-                self.camera = None
+                logger.error('Incorrect Camera.')
+                self.release()
                 return None
 
             self.img = img
-            print('I: Finished Single Shot.')
+            logger.info('Finished Single Shot.')
             return img
 
         if mod == 'keep':
             self.keep_capturing = True
             count = 0
             interval = 1 / frame_rate
-            print(f'I: Start Keep Capturing, Frame Rate is "{frame_rate} Hz".')
+            _interval = interval / 2
+            logger.info(
+                f'Start Keep Capturing, Frame Rate is "{frame_rate} Hz".')
 
             t0 = time.time()
-            t = time.time()
             while self.keep_capturing:
-                # Make sure capturing every [interval] seconds
-                if time.time() - t < interval:
-                    continue
-                else:
-                    t = time.time()
-
                 success, img = self.camera.read()
                 if not success:
-                    print('E: Invalid Camera is Used.')
-                    self.camera = None
+                    logger.error('Incorrect Camera.')
+                    self.release()
                     break
 
                 self.img = img
@@ -112,9 +144,11 @@ class CameraDriver(object):
                 # Report Real Frame Rate Every 10 Seconds
                 if count % (frame_rate * 10) == 0:
                     r = count / (time.time() - t0)
-                    print(f'D: Real frame_rate is "{r}"')
+                    logger.debug(f'Real frame_rate is "{r}"')
 
-            print(f'I: Finished Keep Capturing, Captured "{count}" Times.')
+                time.sleep(_interval)
+
+            logger.info(f'Finished Keep Capturing, Captured "{count}" Times.')
             return self.img
 
 

@@ -2,9 +2,11 @@
     "cSpell.words": [
         "RGBA",
         "Tkinter",
+        "btns",
         "imgtk",
         "padx",
-        "pady"
+        "pady",
+        "tkwnd"
     ],
     "python.analysis.extraPaths": [
         "cameraApp"
