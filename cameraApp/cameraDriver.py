@@ -11,9 +11,12 @@ import time
 import threading
 import traceback
 
+from .myTimer import MyTimer
 from . import logger
 
-frame_rate = 20  # Hz
+frame_rate = 30  # Hz
+
+timer = MyTimer()
 
 
 class CameraDriver(object):
@@ -151,12 +154,13 @@ class CameraDriver(object):
             self.state('Capturing')
             count = 0
             interval = 1 / frame_rate
-            _interval = interval / 2
             logger.info(
                 f'Start Keep Capturing, Frame Rate is "{frame_rate} Hz".')
 
             t0 = time.time()
             while self.state().startswith('Capturing'):
+                # _t = time.time()
+
                 if self.camera is None:
                     logger.error(
                         'Interrupted Keep Capturing, since Camera is None.')
@@ -183,7 +187,8 @@ class CameraDriver(object):
                         f'Real frame_rate of the latest 100 capture is "{r}"')
                     self.state(f'Capturing at {r:0.2f} Hz')
 
-                time.sleep(_interval)
+                # timer.hp_sleep(_t + interval - time.time())
+                time.sleep(interval / 2)
 
             logger.info(f'Finished Keep Capturing, Captured "{count}" Times.')
             return self.img
