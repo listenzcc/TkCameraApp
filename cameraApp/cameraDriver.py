@@ -153,7 +153,6 @@ class CameraDriver(object):
         if mod == 'keep':
             self.state('Capturing')
             count = 0
-            interval = 1 / frame_rate
             logger.info(
                 f'Start Keep Capturing, Frame Rate is "{frame_rate} Hz".')
 
@@ -188,7 +187,7 @@ class CameraDriver(object):
                     self.state(f'Capturing at {r:0.2f} Hz')
 
                 # timer.hp_sleep(_t + interval - time.time())
-                time.sleep(interval / 2)
+                # time.sleep(interval / 2)
 
             logger.info(f'Finished Keep Capturing, Captured "{count}" Times.')
             return self.img
